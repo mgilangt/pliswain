@@ -42,7 +42,6 @@ class MessageController extends Controller
         $validated['sender_number'] = '62' . $request->sender_number;;
         $validated['message_type'] = 'text';
         
-        // dd($validated);
         // Simpan ke database
         $message = $waService->store($validated);
 
