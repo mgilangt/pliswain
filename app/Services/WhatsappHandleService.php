@@ -7,10 +7,12 @@ use App\Services\WatzapService;
 use Illuminate\Support\Str;
 use App\Helpers\WhatsappFormatter;
 use App\Helpers\WhatsAppHelpers;
+use App\Jobs\SendWhatsappMessageJob;
 use App\Models\IpWhatsappLimit;
 use App\Models\IpWhatsappLog;
 use App\Models\WhatsappMessageConfig;
 use App\Models\WhatsappServiceConfig;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -109,4 +111,24 @@ class WhatsappHandleService
             'response_log' => $response->json(),
         ]);
     }
+
+    public function sendMessageScheduler(WhatsappMessage $message): void
+    {
+            $message->update([
+                'status' => 'scheduled',
+            ]);
+
+            $delayTime = Carbon::parse($message->scheduled_at);
+            $now = now();
+
+            $delayInSeconds = $delayTime->greaterThan($now)
+                ? $now->diffInSeconds($delayTime)
+                : 0;
+            
+            // Absolute / Nilai mutlak untuk menghindari negatif
+            $delayInMinutes = abs($delayInSeconds) / 60;
+
+            SendWhatsappMessageJob::dispatch($message)->delay(now()->addMinutes($delayInMinutes));
+    }
+
 }

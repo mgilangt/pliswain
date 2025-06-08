@@ -1,7 +1,13 @@
 @extends('partials.master')
 @section('css')
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
+        .btn-check:checked + .btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check) + .btn:active{
+            background: rgb(5, 189, 147) !important;
+            border-color: rgb(5, 189, 147) !important;
+        }
+
         .btn-radio-group {
             display: flex;
             gap: 12px;
@@ -416,6 +422,27 @@
 
                             </div>
                             <!-- end row -->
+
+                            <div class="row">
+                            <div class="col-lg-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Mau dikirim kapan?<span class="text-danger">*</span></label>
+                                    <div class="btn-group w-100" role="group" aria-label="Send Type">
+                                        <input type="radio" class="btn-check btn-primary" name="send_type" id="send_now" value="now" checked>
+                                        <label class="btn btn-outline-primary" for="send_now">Kirim Sekarang</label>
+
+                                        <input type="radio" class="btn-check btn-primary" name="send_type" id="send_later" value="later">
+                                        <label class="btn btn-outline-primary" for="send_later">Kirim Nanti</label>
+                                    </div>
+
+                                    <div id="datetime-container" class="mt-4" style="display: none;">
+                                        <label for="scheduled_time" class="form-label">Pilih waktu pengiriman:</label>
+                                        <input type="text" id="scheduled_time" name="scheduled_time" class="form-control"
+                                            placeholder="Pilih tanggal & waktu">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                             {{-- <div class="row">
                                 <div class="col-lg-12">
@@ -953,6 +980,8 @@
             });
         }
     </script> --}}
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         $(document).ready(function () {
             const quill = new Quill('#editor', {
@@ -961,7 +990,33 @@
                     toolbar: [['bold', 'italic', 'strike'], ['clean']]
                 }
             });
-    
+
+             function toggleScheduledInput() {
+                if ($('#send_later').is(':checked')) {
+                    $('#datetime-container').show();
+                } else {
+                    $('#datetime-container').hide();
+                    $('#scheduled_time').val('');
+                }
+            }
+
+            toggleScheduledInput();
+
+            $('input[name="send_type"]').on('change', function () {
+                toggleScheduledInput();
+            });
+
+            flatpickr("#scheduled_time", {
+                enableTime: true,
+                dateFormat: "Y-m-d\\TH:i",
+                altInput: true,
+                altFormat: "d F Y H:i",
+                time_24hr: true,
+                defaultDate: "2025-06-10T14:50"
+            });
+
+
+
             $('form[name="form"]').on('submit', function (e) {
                 e.preventDefault(); // cegah form submit biasa
     
@@ -970,7 +1025,6 @@
                 $('#original_content').val(content);
     
                 const formData = $(this).serialize(); // ambil semua input (termasuk hidden content)
-    
                 $.ajax({
                     type: 'POST',
                     url: "{{ route('send.message') }}",
@@ -988,6 +1042,7 @@
                         });
                         $('form')[0].reset(); // reset form
                         quill.root.innerHTML = ''; // reset editor
+                        toggleScheduledInput();
                     },
                     error: function (xhr) {
                         if (xhr.status === 422) {
